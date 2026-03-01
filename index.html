@@ -20,9 +20,10 @@
             text-align: center;
         }
 
+        /* スプレッドシート用リンク */
         .spreadsheet-link {
             text-align: center;
-            margin-bottom: 20px;
+            margin-bottom: 15px;
         }
 
         .spreadsheet-link a {
@@ -30,20 +31,42 @@
             background-color: #2ea44f;
             color: white;
             text-decoration: none;
-            padding: 12px 24px;
+            padding: 10px 20px;
             border-radius: 8px;
             font-weight: bold;
-            font-size: 1.1em;
+            font-size: 1em;
             box-shadow: 0 4px 0 #237a3b;
             transition: 0.1s;
         }
 
         .spreadsheet-link a:hover {
-            background-color: #3fb950;
             transform: translateY(2px);
             box-shadow: 0 2px 0 #237a3b;
         }
 
+        /* モード切替ボタン */
+        .toggle-btn {
+            background-color: #603bff;
+            color: white;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-weight: bold;
+            font-size: 1.1em;
+            border: none;
+            cursor: pointer;
+            box-shadow: 0 4px 0 #3a1cba;
+            margin: 0 auto 30px;
+            display: block;
+            transition: 0.1s;
+        }
+
+        .toggle-btn:hover {
+            background-color: #7252ff;
+            transform: translateY(2px);
+            box-shadow: 0 2px 0 #3a1cba;
+        }
+
+        /* 既存のレイアウト */
         .schedule-container {
             display: flex;
             flex-wrap: wrap;
@@ -180,13 +203,6 @@
             opacity: 0.7;
         }
 
-        .winner-text {
-            color: #ffaa00;
-            font-weight: bold;
-            font-size: 1.1em;
-            margin-bottom: 10px;
-        }
-
         .weapon-list {
             margin-top: 15px;
             text-align: left;
@@ -243,14 +259,6 @@
             margin: 40px auto;
         }
 
-        .history-title {
-            color: #fff;
-            font-size: 1.3em;
-            margin-bottom: 15px;
-            text-align: center;
-            font-weight: bold;
-        }
-
         .history-list {
             display: flex;
             flex-direction: column;
@@ -275,12 +283,6 @@
             border-left: 5px solid #555;
         }
 
-        .history-info {
-            display: flex;
-            flex-direction: column;
-            gap: 5px;
-        }
-
         .history-kd {
             font-weight: bold;
             font-size: 1.2em;
@@ -291,6 +293,51 @@
             font-size: 0.8em;
         }
 
+        /* 📊 分析モード専用のデザイン */
+        .analysis-wrapper {
+            display: none;
+            margin-top: 20px;
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+
+        .rule-section {
+            background-color: #222;
+            margin-bottom: 25px;
+            padding: 20px;
+            border-radius: 10px;
+            border-left: 6px solid #f02d7d;
+        }
+
+        .rule-section h3 {
+            color: #eaff3d;
+            margin-top: 0;
+            border-bottom: 1px solid #444;
+            padding-bottom: 10px;
+            font-size: 1.5em;
+        }
+
+        .stages-grid {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+
+        .stage-box {
+            background-color: #1a1a1a;
+            padding: 15px;
+            border-radius: 8px;
+            flex: 1;
+            min-width: 250px;
+            border-top: 3px solid #603bff;
+        }
+
+        .stage-box h4 {
+            color: #0cf2b4;
+            margin: 0 0 10px 0;
+            font-size: 1.1em;
+        }
+
         .reset-btn {
             background: transparent;
             color: #888;
@@ -299,6 +346,9 @@
             margin-top: 30px;
             cursor: pointer;
             margin-bottom: 50px;
+            display: block;
+            margin-left: auto;
+            margin-right: auto;
         }
     </style>
 </head>
@@ -313,60 +363,70 @@
         </a>
     </div>
 
-    <div class="schedule-container" id="schedule">
-        <p style="color: #ccc;">スケジュールを取得中...</p>
-    </div>
+    <button id="toggle-btn" class="toggle-btn" onclick="toggleMode()">📊 全データ分析モードを開く</button>
 
-    <div class="record-form">
-        <h2 style="color: #0cf2b4; margin-top:0;">📝 爆速・戦績メモ</h2>
-        <div class="form-row">
-            <select id="input-rule" onchange="updateStageDropdown()">
-                <option value="バンカラ (チャレンジ)">バンカラ (チャレンジ)</option>
-                <option value="バンカラ (オープン)">バンカラ (オープン)</option>
-                <option value="Xマッチ">Xマッチ</option>
-                <option value="ナワバリバトル">ナワバリバトル</option>
-            </select>
-
-            <select id="input-stage" style="width: 200px;">
-                <option value="">ステージ読み込み中...</option>
-            </select>
-
-            <select id="input-weapon">
-                <option value="リッター4K">リッター4K</option>
-                <option value="リッター4Kスコープ">リッター4Kスコープ</option>
-                <option value="リッター4Kカスタム">リッター4Kカスタム</option>
-                <option value="リッター4Kカスタムスコープ">リッター4Kカスタムスコープ</option>
-                <option value="R-PEN/5H">R-PEN/5H</option>
-                <option value="スプラチャージャースコープ">スプラチャージャースコープ</option>
-                <option value="トライストリンガーコラボ">トライストリンガーコラボ</option>
-                <option value="バレルスピナー">バレルスピナー</option>
-                <option value="ホクサイ・ヒュー">ホクサイ・ヒュー</option>
-                <option value="ダイナモローラー">ダイナモローラー</option>
-            </select>
+    <div id="main-ui">
+        <div class="schedule-container" id="schedule">
+            <p style="color: #ccc;">スケジュールを取得中...</p>
         </div>
-        <div class="form-row">
-            <input type="number" id="input-kill" placeholder="キル数 (K)" min="0" style="width: 100px;">
-            <input type="number" id="input-death" placeholder="デス数 (D)" min="0" style="width: 100px;">
+
+        <div class="record-form">
+            <h2 style="color: #0cf2b4; margin-top:0;">📝 爆速・戦績メモ</h2>
+            <div class="form-row">
+                <select id="input-rule" onchange="updateStageDropdown()">
+                    <option value="バンカラ (チャレンジ)">バンカラ (チャレンジ)</option>
+                    <option value="バンカラ (オープン)">バンカラ (オープン)</option>
+                    <option value="Xマッチ">Xマッチ</option>
+                    <option value="ナワバリバトル">ナワバリバトル</option>
+                </select>
+
+                <select id="input-stage" style="width: 200px;">
+                    <option value="">ステージ読み込み中...</option>
+                </select>
+
+                <select id="input-weapon">
+                    <option value="リッター4K">リッター4K</option>
+                    <option value="リッター4Kスコープ">リッター4Kスコープ</option>
+                    <option value="リッター4Kカスタム">リッター4Kカスタム</option>
+                    <option value="リッター4Kカスタムスコープ">リッター4Kカスタムスコープ</option>
+                    <option value="R-PEN/5H">R-PEN/5H</option>
+                    <option value="スプラチャージャースコープ">スプラチャージャースコープ</option>
+                    <option value="トライストリンガーコラボ">トライストリンガーコラボ</option>
+                    <option value="バレルスピナー">バレルスピナー</option>
+                    <option value="ホクサイ・ヒュー">ホクサイ・ヒュー</option>
+                    <option value="ダイナモローラー">ダイナモローラー</option>
+                </select>
+            </div>
+            <div class="form-row">
+                <input type="number" id="input-kill" placeholder="キル数 (K)" min="0" style="width: 100px;">
+                <input type="number" id="input-death" placeholder="デス数 (D)" min="0" style="width: 100px;">
+            </div>
+            <div class="form-row" style="margin-top: 20px;">
+                <button class="btn-win" onclick="saveRecord('win')">👑 WIN</button>
+                <button class="btn-lose" onclick="saveRecord('lose')">💀 LOSE</button>
+            </div>
+            <div id="save-msg" style="color: #eaff3d; font-weight: bold; height: 20px;"></div>
         </div>
-        <div class="form-row" style="margin-top: 20px;">
-            <button class="btn-win" onclick="saveRecord('win')">👑 WIN</button>
-            <button class="btn-lose" onclick="saveRecord('lose')">💀 LOSE</button>
+
+        <div class="advice-container" id="advice">
+            <div class="advice-title">🧠 AI 分析スタンバイ中...</div>
         </div>
-        <div id="save-msg" style="color: #eaff3d; font-weight: bold; height: 20px;"></div>
+
+        <div class="history-container" id="history-box" style="display: none;">
+            <div style="color: #fff; font-size: 1.3em; margin-bottom: 15px; text-align: center; font-weight: bold;">🕒
+                直近の戦績 (最新10件)</div>
+            <div class="history-list" id="history-list"></div>
+        </div>
     </div>
 
-    <div class="advice-container" id="advice">
-        <div class="advice-title">🧠 AI 分析スタンバイ中...</div>
+    <div id="analysis-ui" class="analysis-wrapper">
+        <h2 style="text-align: center; color: #eaff3d; margin-bottom: 30px;">📈 ルール・ステージ別 最強ブキランキング</h2>
+        <div id="analysis-content">
+            <p style="text-align:center; color:#ccc;">データを集計しています...</p>
+        </div>
     </div>
 
-    <div class="history-container" id="history-box" style="display: none;">
-        <div class="history-title">🕒 直近の戦績 (最新10件)</div>
-        <div class="history-list" id="history-list"></div>
-    </div>
-
-    <div style="text-align: center;">
-        <button class="reset-btn" onclick="resetData()">スマホのキャッシュを消去</button>
-    </div>
+    <button class="reset-btn" onclick="resetData()">スマホのキャッシュを消去</button>
 
     <script>
         const myWeapons = [
@@ -385,6 +445,26 @@
             'ナワバリバトル': 'レギュラー'
         };
 
+        // 🔄 モード切り替えの処理
+        let isAnalysisMode = false;
+        function toggleMode() {
+            isAnalysisMode = !isAnalysisMode;
+            document.getElementById('main-ui').style.display = isAnalysisMode ? 'none' : 'block';
+            document.getElementById('analysis-ui').style.display = isAnalysisMode ? 'block' : 'none';
+
+            const btn = document.getElementById('toggle-btn');
+            if (isAnalysisMode) {
+                btn.innerText = "🔙 記録・リアルタイム指南に戻る";
+                btn.style.backgroundColor = "#ff4444";
+                btn.style.boxShadow = "0 4px 0 #cc0000";
+                renderFullAnalysis(); // 分析モードを開いた瞬間にデータを最新で集計！
+            } else {
+                btn.innerText = "📊 全データ分析モードを開く";
+                btn.style.backgroundColor = "#603bff";
+                btn.style.boxShadow = "0 4px 0 #3a1cba";
+            }
+        }
+
         function saveRecord(result) {
             const mode = document.getElementById('input-rule').value;
             const stage = document.getElementById('input-stage').value || '不明';
@@ -393,20 +473,11 @@
             const death = document.getElementById('input-death').value;
             const detailRule = currentRuleDetailMap[mode] || "不明";
 
-            if (!kill || !death) {
-                alert("キル数とデス数を入れてください！");
-                return;
-            }
+            if (!kill || !death) { alert("キル数とデス数を入れてください！"); return; }
 
             const recordData = {
-                date: new Date().getTime(),
-                rule: mode,
-                detailRule: detailRule,
-                stage: stage,
-                weapon: weapon,
-                kill: parseInt(kill),
-                death: parseInt(death),
-                result: result
+                date: new Date().getTime(), rule: mode, detailRule: detailRule,
+                stage: stage, weapon: weapon, kill: parseInt(kill), death: parseInt(death), result: result
             };
 
             let records = JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
@@ -417,8 +488,7 @@
             document.getElementById('save-msg').innerText = "⏳ スプレッドシートへ送信中...";
 
             fetch(GAS_URL, {
-                method: 'POST',
-                mode: 'no-cors',
+                method: 'POST', mode: 'no-cors',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(recordData)
             }).then(() => {
@@ -427,7 +497,7 @@
                 document.getElementById('input-death').value = '';
                 setTimeout(() => { document.getElementById('save-msg').innerText = ""; }, 3000);
             }).catch(() => {
-                document.getElementById('save-msg').innerText = "⚠️ 送信エラー（ローカルには保存されました）";
+                document.getElementById('save-msg').innerText = "⚠️ 送信エラー（ローカル保存済）";
             });
         }
 
@@ -437,10 +507,7 @@
                 const dbRecords = await response.json();
                 localStorage.setItem(STORAGE_KEY, JSON.stringify(dbRecords));
                 renderAdvice();
-            } catch (error) {
-                console.error("データ同期エラー:", error);
-                renderAdvice();
-            }
+            } catch (error) { console.error("同期エラー:", error); renderAdvice(); }
         }
 
         function resetData() {
@@ -454,12 +521,9 @@
             const selectedMode = document.getElementById('input-rule').value;
             const stageSelect = document.getElementById('input-stage');
             stageSelect.innerHTML = '';
-
             const stages = ruleStageMap[selectedMode] || [];
             if (stages.length > 0) {
-                stages.forEach(s => {
-                    stageSelect.innerHTML += `<option value="${s}">${s}</option>`;
-                });
+                stages.forEach(s => { stageSelect.innerHTML += `<option value="${s}">${s}</option>`; });
             } else {
                 stageSelect.innerHTML = `<option value="">開催されていません</option>`;
             }
@@ -471,7 +535,6 @@
                     fetch('https://splatoon3.ink/data/schedules.json'),
                     fetch('https://splatoon3.ink/data/locale/ja-JP.json')
                 ]);
-
                 const data = await scheduleRes.json();
                 const locale = await localeRes.json();
 
@@ -508,50 +571,36 @@
 
                 if (regularNode && regularNode.regularMatchSetting) {
                     const setting = regularNode.regularMatchSetting;
-                    const s1 = getStageName(setting.vsStages[0]);
-                    const s2 = getStageName(setting.vsStages[1]);
+                    const s1 = getStageName(setting.vsStages[0]); const s2 = getStageName(setting.vsStages[1]);
                     const ruleName = getRuleName(setting.vsRule);
                     container.innerHTML += createCard('ナワバリバトル', ruleName, s1, s2, '#eaff3d');
-                    ruleStageMap['ナワバリバトル'] = [s1, s2];
-                    currentRuleDetailMap['ナワバリバトル'] = ruleName;
+                    ruleStageMap['ナワバリバトル'] = [s1, s2]; currentRuleDetailMap['ナワバリバトル'] = ruleName;
                 }
-
                 if (bankaraNode && bankaraNode.bankaraMatchSettings) {
                     const bankaraOpen = bankaraNode.bankaraMatchSettings.find(s => s.bankaraMode === 'OPEN');
                     const bankaraChallenge = bankaraNode.bankaraMatchSettings.find(s => s.bankaraMode === 'CHALLENGE');
                     if (bankaraOpen) {
-                        const s1 = getStageName(bankaraOpen.vsStages[0]);
-                        const s2 = getStageName(bankaraOpen.vsStages[1]);
+                        const s1 = getStageName(bankaraOpen.vsStages[0]); const s2 = getStageName(bankaraOpen.vsStages[1]);
                         const ruleName = getRuleName(bankaraOpen.vsRule);
                         container.innerHTML += createCard('バンカラ (オープン)', ruleName, s1, s2, '#f02d7d');
-                        ruleStageMap['バンカラ (オープン)'] = [s1, s2];
-                        currentRuleDetailMap['バンカラ (オープン)'] = ruleName;
+                        ruleStageMap['バンカラ (オープン)'] = [s1, s2]; currentRuleDetailMap['バンカラ (オープン)'] = ruleName;
                     }
                     if (bankaraChallenge) {
-                        const s1 = getStageName(bankaraChallenge.vsStages[0]);
-                        const s2 = getStageName(bankaraChallenge.vsStages[1]);
+                        const s1 = getStageName(bankaraChallenge.vsStages[0]); const s2 = getStageName(bankaraChallenge.vsStages[1]);
                         const ruleName = getRuleName(bankaraChallenge.vsRule);
                         container.innerHTML += createCard('バンカラ (チャレンジ)', ruleName, s1, s2, '#f02d7d');
-                        ruleStageMap['バンカラ (チャレンジ)'] = [s1, s2];
-                        currentRuleDetailMap['バンカラ (チャレンジ)'] = ruleName;
+                        ruleStageMap['バンカラ (チャレンジ)'] = [s1, s2]; currentRuleDetailMap['バンカラ (チャレンジ)'] = ruleName;
                     }
                 }
-
                 if (xMatchNode && xMatchNode.xMatchSetting) {
                     const setting = xMatchNode.xMatchSetting;
-                    const s1 = getStageName(setting.vsStages[0]);
-                    const s2 = getStageName(setting.vsStages[1]);
+                    const s1 = getStageName(setting.vsStages[0]); const s2 = getStageName(setting.vsStages[1]);
                     const ruleName = getRuleName(setting.vsRule);
                     container.innerHTML += createCard('Xマッチ', ruleName, s1, s2, '#0cf2b4');
-                    ruleStageMap['Xマッチ'] = [s1, s2];
-                    currentRuleDetailMap['Xマッチ'] = ruleName;
+                    ruleStageMap['Xマッチ'] = [s1, s2]; currentRuleDetailMap['Xマッチ'] = ruleName;
                 }
-
                 updateStageDropdown();
-
-            } catch (error) {
-                document.getElementById('schedule').innerHTML = `<p style="color: #ff4444;">スケジュールの自動取得に失敗しました。</p>`;
-            }
+            } catch (error) { document.getElementById('schedule').innerHTML = `<p style="color: #ff4444;">スケジュール取得失敗</p>`; }
             renderAdvice();
         }
 
@@ -567,9 +616,7 @@
                 const currentStages = ruleStageMap[modeName] || [];
 
                 const filteredRecords = records.filter(r => {
-                    if (currentStages.length === 0) {
-                        return r.detailRule === targetDetailRule;
-                    }
+                    if (currentStages.length === 0) return r.detailRule === targetDetailRule;
                     return r.detailRule === targetDetailRule && currentStages.includes(r.stage);
                 });
 
@@ -577,12 +624,8 @@
                     const weaponRecords = filteredRecords.filter(r => r.weapon === weapon);
                     const totalMatches = weaponRecords.length;
                     const wins = weaponRecords.filter(r => r.result === 'win').length;
-
-                    if (totalMatches === 0) {
-                        return { name: weapon, rate: -1, text: 'データなし' };
-                    }
-                    const rate = Math.round((wins / totalMatches) * 100);
-                    return { name: weapon, rate: rate, text: `${rate}% (${wins}勝/${totalMatches}戦)` };
+                    if (totalMatches === 0) return { name: weapon, rate: -1, text: 'データなし' };
+                    return { name: weapon, rate: Math.round((wins / totalMatches) * 100), text: `${Math.round((wins / totalMatches) * 100)}% (${wins}勝/${totalMatches}戦)` };
                 }).sort((a, b) => b.rate - a.rate);
             }
 
@@ -599,46 +642,24 @@
             if (maxWinRate === -1) {
                 adviceContainer.innerHTML = `
                     <div class="advice-title">🧠 「ルール＋ステージ」完全一致データ待ち...</div>
-                    <p style="color:#ccc;">現在のスケジュール（ルール＆ステージ）に一致する過去データがありません。<br>1試合記録すると、この激戦区に特化した分析結果が表示されます！</p>
+                    <p style="color:#ccc;">現在のスケジュールに一致する過去データがありません。</p>
                 `;
-                historyBox.style.display = 'none';
-                return;
+                historyBox.style.display = 'none'; return;
             }
 
             const isOpenBest = maxWinRate === topOpen;
-            // Xマッチとチャレンジが同率ならチャレンジを優先するなどの細かい判定
             const isChallengeBest = maxWinRate === topChallenge && !isOpenBest;
             const isXMatchBest = maxWinRate === topXMatch && !isOpenBest && !isChallengeBest;
 
-            let bestModeName = '';
-            let bestModeColor = '';
-            let bestWeaponName = '';
+            let bestModeName = ''; let bestModeColor = ''; let bestWeaponName = '';
+            if (isOpenBest) { bestModeName = 'バンカラ (オープン)'; bestModeColor = '#f02d7d'; bestWeaponName = openData[0].name; }
+            else if (isChallengeBest) { bestModeName = 'バンカラ (チャレンジ)'; bestModeColor = '#f02d7d'; bestWeaponName = challengeData[0].name; }
+            else { bestModeName = 'Xマッチ'; bestModeColor = '#0cf2b4'; bestWeaponName = xMatchData[0].name; }
 
-            // ★ ここで一番勝率が高いルールとブキを特定！
-            if (isOpenBest) {
-                bestModeName = 'バンカラ (オープン)';
-                bestModeColor = '#f02d7d';
-                bestWeaponName = openData[0].name;
-            } else if (isChallengeBest) {
-                bestModeName = 'バンカラ (チャレンジ)';
-                bestModeColor = '#f02d7d';
-                bestWeaponName = challengeData[0].name;
-            } else {
-                bestModeName = 'Xマッチ';
-                bestModeColor = '#0cf2b4';
-                bestWeaponName = xMatchData[0].name;
-            }
-
-            // ★ 消えていた「オススメを自動セットするロジック」を復活！
             const ruleSelect = document.getElementById('input-rule');
             const weaponSelect = document.getElementById('input-weapon');
-            if (ruleSelect.value !== bestModeName) {
-                ruleSelect.value = bestModeName;
-                updateStageDropdown(); // ステージも連動させる
-            }
-            if (bestWeaponName) {
-                weaponSelect.value = bestWeaponName;
-            }
+            if (ruleSelect.value !== bestModeName) { ruleSelect.value = bestModeName; updateStageDropdown(); }
+            if (bestWeaponName) { weaponSelect.value = bestWeaponName; }
 
             function createWeaponListHtml(weaponData) {
                 let html = '<div class="weapon-list">';
@@ -646,8 +667,7 @@
                     let colorClass = w.rate >= 50 ? 'high-win' : (w.rate >= 0 ? 'low-win' : 'no-data');
                     html += `<div class="weapon-item ${colorClass}"><span>${w.name}</span><span>${w.text}</span></div>`;
                 });
-                html += '</div>';
-                return html;
+                return html + '</div>';
             }
 
             adviceContainer.innerHTML = `
@@ -674,8 +694,7 @@
             const recentRecords = sortedRecords.slice(0, 10);
             let historyHtml = '';
             recentRecords.forEach(r => {
-                const isWin = r.result === 'win';
-                const d = new Date(r.date);
+                const isWin = r.result === 'win'; const d = new Date(r.date);
                 const dateStr = `${d.getMonth() + 1}/${d.getDate()} ${d.getHours()}:${String(d.getMinutes()).padStart(2, '0')}`;
                 historyHtml += `
                     <div class="history-item ${isWin ? 'history-win' : 'history-lose'}">
@@ -691,7 +710,75 @@
                     </div>
                 `;
             });
-            historyList.innerHTML = historyHtml;
+            document.getElementById('history-list').innerHTML = historyHtml;
+        }
+
+        // ==========================================
+        // 📊 全データ分析の集計・描画ロジック
+        // ==========================================
+        function renderFullAnalysis() {
+            let records = JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
+            let analysisBox = document.getElementById('analysis-content');
+
+            if (records.length === 0) {
+                analysisBox.innerHTML = "<p style='text-align:center; color:#888;'>まだ記録がありません。</p>";
+                return;
+            }
+
+            // ルール -> ステージ -> ブキ の順番でデータをまとめる箱を作る
+            let dataMap = {};
+            records.forEach(r => {
+                let ruleName = (!r.detailRule || r.detailRule === '不明') ? '【過去の未分類データ】' : r.detailRule;
+                let stageName = r.stage || "ステージ不明";
+                let weaponName = r.weapon;
+                let isWin = r.result === 'win';
+
+                if (!dataMap[ruleName]) dataMap[ruleName] = {};
+                if (!dataMap[ruleName][stageName]) dataMap[ruleName][stageName] = {};
+                if (!dataMap[ruleName][stageName][weaponName]) dataMap[ruleName][stageName][weaponName] = { win: 0, total: 0 };
+
+                dataMap[ruleName][stageName][weaponName].total++;
+                if (isWin) dataMap[ruleName][stageName][weaponName].win++;
+            });
+
+            let html = "";
+            for (let rule in dataMap) {
+                html += `<div class="rule-section"><h3>🎮 ${rule}</h3><div class="stages-grid">`;
+
+                for (let stage in dataMap[rule]) {
+                    html += `<div class="stage-box"><h4>📍 ${stage}</h4>`;
+
+                    // ブキごとの勝率を計算して配列にする
+                    let wData = [];
+                    for (let weapon in dataMap[rule][stage]) {
+                        let d = dataMap[rule][stage][weapon];
+                        let rate = Math.round((d.win / d.total) * 100);
+                        wData.push({ weapon: weapon, rate: rate, win: d.win, total: d.total });
+                    }
+
+                    // 勝率が高い順に並び替え（勝率が同じなら試合数が多い方を上にする）
+                    wData.sort((a, b) => {
+                        if (b.rate !== a.rate) return b.rate - a.rate;
+                        return b.total - a.total;
+                    });
+
+                    html += `<div class="weapon-list" style="margin-top:0;">`;
+                    wData.forEach((w, index) => {
+                        let rank = index === 0 ? "🥇" : (index === 1 ? "🥈" : (index === 2 ? "🥉" : "　"));
+                        let colorClass = w.rate >= 50 ? 'high-win' : 'low-win';
+                        html += `
+                            <div class="weapon-item ${colorClass}">
+                                <span>${rank} ${w.weapon}</span>
+                                <span>${w.rate}% (${w.win}勝/${w.total}戦)</span>
+                            </div>
+                        `;
+                    });
+                    html += `</div></div>`;
+                }
+                html += `</div></div>`;
+            }
+
+            analysisBox.innerHTML = html;
         }
 
         fetchSchedule();
