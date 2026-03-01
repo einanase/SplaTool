@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="ja">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -12,30 +13,35 @@
             margin: 0;
             padding: 20px;
         }
+
         h1 {
             color: #eaff3d;
             text-shadow: 0 0 10px rgba(234, 255, 61, 0.5);
             text-align: center;
         }
+
         .schedule-container {
             display: flex;
             flex-wrap: wrap;
             gap: 15px;
             justify-content: center;
         }
+
         .rule-card {
             background-color: #2a2a2a;
             border-radius: 10px;
             padding: 15px;
             width: 300px;
             border-top: 5px solid #f02d7d;
-            box-shadow: 0 4px 8px rgba(0,0,0,0.5);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.5);
         }
+
         .rule-name {
             font-size: 1.2em;
             font-weight: bold;
             margin-bottom: 10px;
         }
+
         .stage-name {
             background-color: #333;
             padding: 8px;
@@ -43,7 +49,7 @@
             border-radius: 5px;
             border-left: 4px solid #603bff;
         }
-        
+
         /* 記録フォームのデザイン */
         .record-form {
             background-color: #222;
@@ -54,6 +60,7 @@
             max-width: 800px;
             text-align: center;
         }
+
         .form-row {
             display: flex;
             justify-content: center;
@@ -61,7 +68,9 @@
             margin-bottom: 15px;
             flex-wrap: wrap;
         }
-        select, input[type="number"] {
+
+        select,
+        input[type="number"] {
             background-color: #333;
             color: #fff;
             border: 1px solid #555;
@@ -69,7 +78,9 @@
             border-radius: 5px;
             font-size: 1.1em;
         }
-        .btn-win, .btn-lose {
+
+        .btn-win,
+        .btn-lose {
             font-size: 1.5em;
             font-weight: bold;
             padding: 15px 40px;
@@ -78,10 +89,26 @@
             cursor: pointer;
             transition: 0.2s;
         }
-        .btn-win { background-color: #ffaa00; color: #000; }
-        .btn-win:hover { background-color: #ffcc00; transform: scale(1.05); }
-        .btn-lose { background-color: #555; color: #fff; }
-        .btn-lose:hover { background-color: #777; transform: scale(1.05); }
+
+        .btn-win {
+            background-color: #ffaa00;
+            color: #000;
+        }
+
+        .btn-win:hover {
+            background-color: #ffcc00;
+            transform: scale(1.05);
+        }
+
+        .btn-lose {
+            background-color: #555;
+            color: #fff;
+        }
+
+        .btn-lose:hover {
+            background-color: #777;
+            transform: scale(1.05);
+        }
 
         /* 比較エリアのデザイン */
         .advice-container {
@@ -92,12 +119,14 @@
             border-radius: 15px;
             text-align: center;
         }
+
         .advice-title {
             color: #fff;
             font-size: 1.5em;
             margin-bottom: 20px;
             font-weight: bold;
         }
+
         .compare-box {
             display: flex;
             justify-content: center;
@@ -105,6 +134,7 @@
             flex-wrap: wrap;
             align-items: stretch;
         }
+
         .compare-card {
             background-color: #222;
             padding: 20px;
@@ -114,32 +144,36 @@
             display: flex;
             flex-direction: column;
         }
+
         .winner-card {
             border: 3px solid #ffaa00;
             box-shadow: 0 0 20px rgba(255, 170, 0, 0.4);
             transform: scale(1.03);
             z-index: 10;
         }
+
         .loser-card {
             border: 1px solid #444;
             opacity: 0.7;
         }
+
         .winner-text {
             color: #ffaa00;
             font-weight: bold;
             font-size: 1.1em;
             margin-bottom: 10px;
         }
-        
+
         .weapon-list {
             margin-top: 15px;
             text-align: left;
             font-size: 0.9em;
-            background: rgba(0,0,0,0.4);
+            background: rgba(0, 0, 0, 0.4);
             padding: 10px;
             border-radius: 8px;
             flex-grow: 1;
         }
+
         .weapon-item {
             display: flex;
             justify-content: space-between;
@@ -147,13 +181,25 @@
             border-bottom: 1px dashed #444;
             padding-bottom: 4px;
         }
+
         .weapon-item:last-child {
             border-bottom: none;
             margin-bottom: 0;
         }
-        .high-win { color: #0cf2b4; font-weight: bold; }
-        .low-win { color: #888; }
-        .no-data { color: #555; font-style: italic; }
+
+        .high-win {
+            color: #0cf2b4;
+            font-weight: bold;
+        }
+
+        .low-win {
+            color: #888;
+        }
+
+        .no-data {
+            color: #555;
+            font-style: italic;
+        }
 
         .conclusion {
             margin-top: 30px;
@@ -163,7 +209,7 @@
             background-color: #333;
             border-radius: 8px;
         }
-        
+
         .reset-btn {
             background: transparent;
             color: #888;
@@ -174,9 +220,10 @@
         }
     </style>
 </head>
+
 <body>
     <h1>🦑 リアルタイム指南ツール 🦑</h1>
-    
+
     <div class="schedule-container" id="schedule">
         <p>スケジュールを読み込み中...</p>
     </div>
@@ -243,7 +290,7 @@
             const kill = document.getElementById('input-kill').value;
             const death = document.getElementById('input-death').value;
 
-            if(!kill || !death) {
+            if (!kill || !death) {
                 alert("キル数とデス数を入れてください！");
                 return;
             }
@@ -269,7 +316,7 @@
         }
 
         function resetData() {
-            if(confirm("本当に今までの戦績データを全部消去しますか？")) {
+            if (confirm("本当に今までの戦績データを全部消去しますか？")) {
                 localStorage.removeItem(STORAGE_KEY);
                 renderAdvice();
             }
@@ -300,7 +347,7 @@
                     fetch('https://splatoon3.ink/data/schedules.json'),
                     fetch('https://splatoon3.ink/data/locale/ja-JP.json')
                 ]);
-                
+
                 const data = await scheduleRes.json();
                 const locale = await localeRes.json();
 
@@ -322,7 +369,7 @@
                 const festNode = getCurrent(data.data.festSchedules.nodes);
 
                 const container = document.getElementById('schedule');
-                container.innerHTML = ''; 
+                container.innerHTML = '';
 
                 // 辞書をリセット
                 ruleStageMap = {};
@@ -389,18 +436,18 @@
 
             function calcWinRates(ruleName) {
                 const ruleRecords = records.filter(r => r.rule === ruleName);
-                
+
                 return myWeapons.map(weapon => {
                     const weaponRecords = ruleRecords.filter(r => r.weapon === weapon);
                     const totalMatches = weaponRecords.length;
                     const wins = weaponRecords.filter(r => r.result === 'win').length;
-                    
+
                     if (totalMatches === 0) {
                         return { name: weapon, rate: -1, text: 'データなし' };
                     }
                     const rate = Math.round((wins / totalMatches) * 100);
                     return { name: weapon, rate: rate, text: `${rate}% (${wins}勝/${totalMatches}戦)` };
-                }).sort((a, b) => b.rate - a.rate); 
+                }).sort((a, b) => b.rate - a.rate);
             }
 
             const openData = calcWinRates('バンカラ (オープン)');
@@ -410,10 +457,10 @@
             let topOpen = openData[0].rate >= 0 ? openData[0].rate : -1;
             let topChallenge = challengeData[0].rate >= 0 ? challengeData[0].rate : -1;
             let topXMatch = xMatchData[0].rate >= 0 ? xMatchData[0].rate : -1;
-            
+
             const maxWinRate = Math.max(topOpen, topChallenge, topXMatch);
 
-            if(maxWinRate === -1) {
+            if (maxWinRate === -1) {
                 adviceContainer.innerHTML = `
                     <div class="advice-title">🧠 AI 分析スタンバイ中...</div>
                     <p style="color:#ccc;">まだ戦績データがありません。<br>上のフォームから1試合でも記録すると、ここに最強の分析結果が表示されます！</p>
@@ -429,8 +476,8 @@
                 let html = '<div class="weapon-list">';
                 weaponData.forEach(w => {
                     let colorClass = 'no-data';
-                    if(w.rate >= 50) colorClass = 'high-win';
-                    else if(w.rate >= 0) colorClass = 'low-win';
+                    if (w.rate >= 50) colorClass = 'high-win';
+                    else if (w.rate >= 0) colorClass = 'low-win';
 
                     html += `
                         <div class="weapon-item ${colorClass}">
@@ -481,4 +528,5 @@
         fetchSchedule();
     </script>
 </body>
+
 </html>
