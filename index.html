@@ -210,13 +210,74 @@
             border-radius: 8px;
         }
 
+        /* 👇 新しい「履歴リスト」のデザイン 👇 */
+        .history-container {
+            margin-top: 40px;
+            padding: 20px;
+            background-color: #1a1a1a;
+            border: 2px solid #333;
+            border-radius: 15px;
+            max-width: 800px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        .history-title {
+            color: #fff;
+            font-size: 1.3em;
+            margin-bottom: 15px;
+            text-align: center;
+            font-weight: bold;
+        }
+
+        .history-list {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .history-item {
+            background-color: #2a2a2a;
+            padding: 10px 15px;
+            border-radius: 8px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 0.9em;
+        }
+
+        .history-win {
+            border-left: 5px solid #ffaa00;
+        }
+
+        .history-lose {
+            border-left: 5px solid #555;
+        }
+
+        .history-info {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        .history-kd {
+            font-weight: bold;
+            font-size: 1.2em;
+        }
+
+        .history-date {
+            color: #888;
+            font-size: 0.8em;
+        }
+
         .reset-btn {
             background: transparent;
             color: #888;
             border: 1px solid #888;
             padding: 5px 10px;
-            margin-top: 20px;
+            margin-top: 30px;
             cursor: pointer;
+            margin-bottom: 50px;
         }
     </style>
 </head>
@@ -268,8 +329,14 @@
         <div class="advice-title">🧠 AI 分析中...</div>
     </div>
 
+    <div class="history-container" id="history-box" style="display: none;">
+        <div class="history-title">🕒 直近の戦績 (最新10件)</div>
+        <div class="history-list" id="history-list">
+        </div>
+    </div>
+
     <div style="text-align: center;">
-        <button class="reset-btn" onclick="resetData()">戦績データを全消去</button>
+        <button class="reset-btn" onclick="resetData()">スマホのキャッシュを消去</button>
     </div>
 
     <script>
@@ -280,13 +347,10 @@
         ];
         const STORAGE_KEY = 'spla_my_records';
 
-        // ルールとステージの組み合わせを保存する辞書
-        let ruleStageMap = {};
-
-        // --------------------------------------------------------
-        // 👇 ① まず、さっきのGAS_URLを「一番外側（グローバル）」に出します 👇
+        // ⚠️ ここにスプレッドシートの長いURLを貼り直してください！ ⚠️
         const GAS_URL = "https://script.google.com/macros/s/AKfycbwXBXAkhzPBi5ka_nphYoKqO-EO6xYPr3wEqP3OCP6OwPKnv7AU-YFkuogGAb1FbZOCYw/exec";
-        // --------------------------------------------------------
+
+        let ruleStageMap = {};
 
         function saveRecord(result) {
             const rule = document.getElementById('input-rule').value;
@@ -310,7 +374,7 @@
                 result: result
             };
 
-            // まず画面（スマホの中）を更新して爆速で表示を切り替える
+            // スマホの記憶を更新して即画面反映
             let records = JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
             records.push(recordData);
             localStorage.setItem(STORAGE_KEY, JSON.stringify(records));
@@ -332,7 +396,6 @@
             });
         }
 
-        // 👇 ② そして、この「スプレッドシートから読み込む関数」を追記します！ 👇
         async function loadDataFromSpreadsheet() {
             const adviceContainer = document.getElementById('advice');
             adviceContainer.innerHTML = `
@@ -341,28 +404,23 @@
             `;
 
             try {
-                // スプレッドシートから最新データを取得！
                 const response = await fetch(GAS_URL);
                 const dbRecords = await response.json();
-
-                // スマホの記憶を、スプレッドシートの「最新の真実」で完全に上書きする！
                 localStorage.setItem(STORAGE_KEY, JSON.stringify(dbRecords));
-
-                // 画面を再計算して描画！
                 renderAdvice();
             } catch (error) {
                 console.error("データ同期エラー:", error);
-                // 失敗した場合は、とりあえずスマホの中のデータで描画する
                 renderAdvice();
             }
         }
 
-        // 👇 ③ 最後に、一番下の呼び出し部分をこう変えます！ 👇
-        // スケジュール取得と、データ同期を同時にスタートさせる！
-        fetchSchedule();
-        loadDataFromSpreadsheet();
+        function resetData() {
+            if (confirm("スマホの記憶（キャッシュ）を消去しますか？\n※スプレッドシートのデータは消えません。")) {
+                localStorage.removeItem(STORAGE_KEY);
+                renderAdvice();
+            }
+        }
 
-        // ルール選択が変更された時にステージ一覧を切り替える関数
         function updateStageDropdown() {
             const selectedRule = document.getElementById('input-rule').value;
             const stageSelect = document.getElementById('input-stage');
@@ -378,7 +436,6 @@
             }
         }
 
-        // ルールのプルダウンに監視役（イベントリスナー）をセット
         document.getElementById('input-rule').addEventListener('change', updateStageDropdown);
 
         async function fetchSchedule() {
@@ -410,8 +467,6 @@
 
                 const container = document.getElementById('schedule');
                 container.innerHTML = '';
-
-                // 辞書をリセット
                 ruleStageMap = {};
 
                 function createCard(title, ruleName, stage1Name, stage2Name, color) {
@@ -460,10 +515,7 @@
                     ruleStageMap['Xマッチ'] = [s1, s2];
                 }
 
-                // 初期状態のステージプルダウンを設定
                 updateStageDropdown();
-
-                renderAdvice();
 
             } catch (error) {
                 document.getElementById('schedule').innerHTML = `<p>エラーが発生しました: ${error.message}</p>`;
@@ -472,6 +524,9 @@
 
         function renderAdvice() {
             const adviceContainer = document.getElementById('advice');
+            const historyBox = document.getElementById('history-box');
+            const historyList = document.getElementById('history-list');
+
             let records = JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
 
             function calcWinRates(ruleName) {
@@ -500,14 +555,17 @@
 
             const maxWinRate = Math.max(topOpen, topChallenge, topXMatch);
 
+            // ▼ データが1件もない時の処理
             if (maxWinRate === -1) {
                 adviceContainer.innerHTML = `
                     <div class="advice-title">🧠 AI 分析スタンバイ中...</div>
                     <p style="color:#ccc;">まだ戦績データがありません。<br>上のフォームから1試合でも記録すると、ここに最強の分析結果が表示されます！</p>
                 `;
+                historyBox.style.display = 'none'; // 履歴リストも隠す
                 return;
             }
 
+            // ▼ 分析結果の表示
             const isOpenBest = maxWinRate === topOpen;
             const isChallengeBest = maxWinRate === topChallenge;
             const isXMatchBest = maxWinRate === topXMatch;
@@ -563,9 +621,44 @@
                     💡 結論：今の時間は <span style="color: ${bestModeColor}; font-size: 1.1em;">「${bestModeName}」</span> に潜るのが一番勝率が高いです！
                 </div>
             `;
+
+            // ▼ 新機能：直近10件の履歴リストを描画する
+            historyBox.style.display = 'block'; // エリアを表示
+
+            // 日付が新しい順（降順）に並べ替える
+            const sortedRecords = [...records].sort((a, b) => b.date - a.date);
+            // 上から10件だけ切り取る
+            const recentRecords = sortedRecords.slice(0, 10);
+
+            let historyHtml = '';
+            recentRecords.forEach(r => {
+                const isWin = r.result === 'win';
+                const resultText = isWin ? '<span style="color:#ffaa00; font-weight:bold;">WIN</span>' : '<span style="color:#888; font-weight:bold;">LOSE</span>';
+                const resultClass = isWin ? 'history-win' : 'history-lose';
+
+                // 日付をわかりやすくフォーマット（例: 3/1 14:05）
+                const d = new Date(r.date);
+                const dateStr = `${d.getMonth() + 1}/${d.getDate()} ${d.getHours()}:${String(d.getMinutes()).padStart(2, '0')}`;
+
+                historyHtml += `
+                    <div class="history-item ${resultClass}">
+                        <div class="history-info">
+                            <div style="font-weight:bold; color:#0cf2b4;">${r.rule} / ${r.stage}</div>
+                            <div>🔫 ${r.weapon}</div>
+                            <div class="history-date">${dateStr}</div>
+                        </div>
+                        <div style="text-align: right;">
+                            <div style="margin-bottom:5px;">${resultText}</div>
+                            <div class="history-kd">${r.kill}k / ${r.death}d</div>
+                        </div>
+                    </div>
+                `;
+            });
+            historyList.innerHTML = historyHtml;
         }
 
         fetchSchedule();
+        loadDataFromSpreadsheet();
     </script>
 </body>
 
