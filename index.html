@@ -562,17 +562,14 @@
 
             let records = JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
 
-            // ★ プランB：モード（オープン・X等）は無視！「今のルール」と「今の2つのステージ」が完全一致する過去データだけを集める！
             function calcWinRates(modeName) {
                 const targetDetailRule = currentRuleDetailMap[modeName] || "不明";
-                const currentStages = ruleStageMap[modeName] || []; // 今開催されている2つのステージ
+                const currentStages = ruleStageMap[modeName] || [];
 
                 const filteredRecords = records.filter(r => {
-                    // スケジュール取得失敗時などでステージ情報がない場合は、ルールの完全一致だけで妥協する安全装置
                     if (currentStages.length === 0) {
                         return r.detailRule === targetDetailRule;
                     }
-                    // プランBの真髄：オープンだろうがXだろうが、ルールとステージの両方が一致するデータを抽出！
                     return r.detailRule === targetDetailRule && currentStages.includes(r.stage);
                 });
 
@@ -609,11 +606,39 @@
             }
 
             const isOpenBest = maxWinRate === topOpen;
-            const isChallengeBest = maxWinRate === topChallenge;
-            const isXMatchBest = maxWinRate === topXMatch;
+            // Xマッチとチャレンジが同率ならチャレンジを優先するなどの細かい判定
+            const isChallengeBest = maxWinRate === topChallenge && !isOpenBest;
+            const isXMatchBest = maxWinRate === topXMatch && !isOpenBest && !isChallengeBest;
 
-            let bestModeName = isOpenBest ? 'バンカラ (オープン)' : (isXMatchBest ? 'Xマッチ' : 'バンカラ (チャレンジ)');
-            let bestModeColor = isXMatchBest ? '#0cf2b4' : '#f02d7d';
+            let bestModeName = '';
+            let bestModeColor = '';
+            let bestWeaponName = '';
+
+            // ★ ここで一番勝率が高いルールとブキを特定！
+            if (isOpenBest) {
+                bestModeName = 'バンカラ (オープン)';
+                bestModeColor = '#f02d7d';
+                bestWeaponName = openData[0].name;
+            } else if (isChallengeBest) {
+                bestModeName = 'バンカラ (チャレンジ)';
+                bestModeColor = '#f02d7d';
+                bestWeaponName = challengeData[0].name;
+            } else {
+                bestModeName = 'Xマッチ';
+                bestModeColor = '#0cf2b4';
+                bestWeaponName = xMatchData[0].name;
+            }
+
+            // ★ 消えていた「オススメを自動セットするロジック」を復活！
+            const ruleSelect = document.getElementById('input-rule');
+            const weaponSelect = document.getElementById('input-weapon');
+            if (ruleSelect.value !== bestModeName) {
+                ruleSelect.value = bestModeName;
+                updateStageDropdown(); // ステージも連動させる
+            }
+            if (bestWeaponName) {
+                weaponSelect.value = bestWeaponName;
+            }
 
             function createWeaponListHtml(weaponData) {
                 let html = '<div class="weapon-list">';
