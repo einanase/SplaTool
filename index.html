@@ -20,7 +20,6 @@
             text-align: center;
         }
 
-        /* 📊 スプレッドシート用リンク（JSエラーでも絶対に表示されるように独立） */
         .spreadsheet-link {
             text-align: center;
             margin-bottom: 20px;
@@ -327,7 +326,10 @@
                 <option value="Xマッチ">Xマッチ</option>
                 <option value="ナワバリバトル">ナワバリバトル</option>
             </select>
-            <input type="text" id="input-stage" placeholder="ステージ名 (自動取得または手動)" style="width: 200px;">
+
+            <select id="input-stage" style="width: 200px;">
+                <option value="">ステージ読み込み中...</option>
+            </select>
 
             <select id="input-weapon">
                 <option value="リッター4K">リッター4K</option>
@@ -399,7 +401,7 @@
             const recordData = {
                 date: new Date().getTime(),
                 rule: mode,
-                detailRule: detailRule, // ★ ガチヤグラ、ガチアサリ等の厳密なルール名
+                detailRule: detailRule,
                 stage: stage,
                 weapon: weapon,
                 kill: parseInt(kill),
@@ -437,7 +439,7 @@
                 renderAdvice();
             } catch (error) {
                 console.error("データ同期エラー:", error);
-                renderAdvice(); // エラーでも画面は描画する
+                renderAdvice();
             }
         }
 
@@ -448,14 +450,19 @@
             }
         }
 
+        // ★ プルダウン連動のスクリプトも元に戻しました！
         function updateStageDropdown() {
             const selectedMode = document.getElementById('input-rule').value;
+            const stageSelect = document.getElementById('input-stage');
+            stageSelect.innerHTML = '';
+
             const stages = ruleStageMap[selectedMode] || [];
-            const stageInput = document.getElementById('input-stage');
             if (stages.length > 0) {
-                stageInput.value = stages[0]; // 自動的に一つ目のステージをセット
+                stages.forEach(s => {
+                    stageSelect.innerHTML += `<option value="${s}">${s}</option>`;
+                });
             } else {
-                stageInput.value = "";
+                stageSelect.innerHTML = `<option value="">開催されていません</option>`;
             }
         }
 
@@ -544,10 +551,8 @@
                 updateStageDropdown();
 
             } catch (error) {
-                // 通信エラー（Failed to fetch等）が起きても画面が壊れないようにする
-                document.getElementById('schedule').innerHTML = `<p style="color: #ff4444;">スケジュールの自動取得に失敗しました。<br>ステージ名は下の入力欄に手動で入力してください。</p>`;
+                document.getElementById('schedule').innerHTML = `<p style="color: #ff4444;">スケジュールの自動取得に失敗しました。</p>`;
             }
-            // エラーが起きても絶対に分析処理は走らせる
             renderAdvice();
         }
 
@@ -558,11 +563,9 @@
 
             let records = JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
 
-            // ★ 修正ポイント：モード（チャレンジ等）と、現在の詳細ルール（ヤグラ等）の両方が一致するデータだけを抽出
             function calcWinRates(modeName) {
                 const targetDetailRule = currentRuleDetailMap[modeName] || "不明";
                 const filteredRecords = records.filter(r => {
-                    // 古いデータ（detailRuleがない）は今のルールと一致しないため除外される
                     return r.rule === modeName && r.detailRule === targetDetailRule;
                 });
 
