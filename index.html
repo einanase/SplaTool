@@ -295,8 +295,11 @@
                 return;
             }
 
-            let records = JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
-            records.push({
+            // 👇 ここに、さっきコピーした長ーいURLを貼り付けます！ 👇
+            const GAS_URL = "https://script.google.com/macros/s/AKfycbwXBXAkhzPBi5ka_nphYoKqO-EO6xYPr3wEqP3OCP6OwPKnv7AU-YFkuogGAb1FbZOCYw/exec";
+
+            // 送るデータを作る
+            const recordData = {
                 date: new Date().getTime(),
                 rule: rule,
                 stage: stage,
@@ -304,15 +307,32 @@
                 kill: parseInt(kill),
                 death: parseInt(death),
                 result: result
-            });
-            localStorage.setItem(STORAGE_KEY, JSON.stringify(records));
+            };
 
-            document.getElementById('save-msg').innerText = "✅ 記録を保存してAIが再計算しました！";
+            // 1. 今まで通り、スマホの中（localStorage）にも保存して画面を更新する
+            let records = JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
+            records.push(recordData);
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(records));
+            renderAdvice();
+
+            // 2. さらに！ スプレッドシート（DB）にも裏口からデータを送信する！
+            fetch(GAS_URL, {
+                method: 'POST',
+                mode: 'no-cors', // セキュリティの壁をすり抜けるおまじない
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(recordData)
+            }).then(() => {
+                console.log("スプレッドシートへの送信完了！");
+            }).catch(error => {
+                console.error("エラー:", error);
+            });
+
+            document.getElementById('save-msg').innerText = "✅ スプレッドシートにも記録を保存しました！";
             document.getElementById('input-kill').value = '';
             document.getElementById('input-death').value = '';
-            setTimeout(() => { document.getElementById('save-msg').innerText = ""; }, 2000);
-
-            renderAdvice();
+            setTimeout(() => { document.getElementById('save-msg').innerText = ""; }, 3000);
         }
 
         function resetData() {
