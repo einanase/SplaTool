@@ -450,7 +450,6 @@
             }
         }
 
-        // ★ プルダウン連動のスクリプトも元に戻しました！
         function updateStageDropdown() {
             const selectedMode = document.getElementById('input-rule').value;
             const stageSelect = document.getElementById('input-stage');
@@ -563,10 +562,18 @@
 
             let records = JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
 
+            // ★ プランB：モード（オープン・X等）は無視！「今のルール」と「今の2つのステージ」が完全一致する過去データだけを集める！
             function calcWinRates(modeName) {
                 const targetDetailRule = currentRuleDetailMap[modeName] || "不明";
+                const currentStages = ruleStageMap[modeName] || []; // 今開催されている2つのステージ
+
                 const filteredRecords = records.filter(r => {
-                    return r.rule === modeName && r.detailRule === targetDetailRule;
+                    // スケジュール取得失敗時などでステージ情報がない場合は、ルールの完全一致だけで妥協する安全装置
+                    if (currentStages.length === 0) {
+                        return r.detailRule === targetDetailRule;
+                    }
+                    // プランBの真髄：オープンだろうがXだろうが、ルールとステージの両方が一致するデータを抽出！
+                    return r.detailRule === targetDetailRule && currentStages.includes(r.stage);
                 });
 
                 return myWeapons.map(weapon => {
@@ -594,8 +601,8 @@
 
             if (maxWinRate === -1) {
                 adviceContainer.innerHTML = `
-                    <div class="advice-title">🧠 今のルールに合わせた分析スタンバイ中...</div>
-                    <p style="color:#ccc;">今のルール（${currentRuleDetailMap['バンカラ (チャレンジ)']}等）の戦績データがまだありません。<br>1試合記録すると、このルールに特化した分析結果が表示されます！</p>
+                    <div class="advice-title">🧠 「ルール＋ステージ」完全一致データ待ち...</div>
+                    <p style="color:#ccc;">現在のスケジュール（ルール＆ステージ）に一致する過去データがありません。<br>1試合記録すると、この激戦区に特化した分析結果が表示されます！</p>
                 `;
                 historyBox.style.display = 'none';
                 return;
@@ -619,7 +626,7 @@
             }
 
             adviceContainer.innerHTML = `
-                <div class="advice-title">📊 今のルールに特化した分析結果</div>
+                <div class="advice-title">📊 今の「ルール＋ステージ」に特化した勝率分析</div>
                 <div class="compare-box">
                     <div class="compare-card ${isOpenBest ? 'winner-card' : 'loser-card'}">
                         <div style="font-weight:bold;">オープン【${currentRuleDetailMap['バンカラ (オープン)']}】</div>
@@ -634,7 +641,7 @@
                         ${createWeaponListHtml(xMatchData)}
                     </div>
                 </div>
-                <div class="conclusion">💡 結論：今は <span style="color: ${bestModeColor};">「${bestModeName}」</span> が一番おすすめです！</div>
+                <div class="conclusion">💡 結論：今は <span style="color: ${bestModeColor};">「${bestModeName}」</span> が一番勝てそうです！</div>
             `;
 
             historyBox.style.display = 'block';
