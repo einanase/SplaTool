@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>マイスプラ指南ツール</title>
+    <style>
+        body {
+            background-color: #1e1e1e;
+            color: #ffffff;
+            font-family: 'Helvetica Neue', Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+        }
+
+        h1 {
+            color: #eaff3d;
+            text-shadow: 0 0 10px rgba(234, 255, 61, 0.5);
+            text-align: center;
+        }
+
+        .schedule-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            justify-content: center;
+        }
+
+        .rule-card {
+            background-color: #2a2a2a;
+            border-radius: 10px;
+            padding: 15px;
+            width: 300px;
+            border-top: 5px solid #f02d7d;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.5);
+        }
+
+        .rule-name {
+            font-size: 1.2em;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+
+        .stage-name {
+            background-color: #333;
+            padding: 8px;
+            margin: 5px 0;
+            border-radius: 5px;
+            border-left: 4px solid #603bff;
+        }
+
+        /* 比較エリアのデザイン */
+        .advice-container {
+            margin-top: 40px;
+            padding: 20px;
+            background-color: #111;
+            border: 2px solid #555;
+            border-radius: 15px;
+            text-align: center;
+        }
+
+        .advice-title {
+            color: #fff;
+            font-size: 1.5em;
+            margin-bottom: 20px;
+            font-weight: bold;
+        }
+
+        .compare-box {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            flex-wrap: wrap;
+            align-items: stretch;
+        }
+
+        .compare-card {
+            background-color: #222;
+            padding: 20px;
+            border-radius: 10px;
+            width: 300px;
+            transition: 0.3s;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .winner-card {
+            border: 3px solid #ffaa00;
+            box-shadow: 0 0 20px rgba(255, 170, 0, 0.4);
+            transform: scale(1.03);
+            z-index: 10;
+        }
+
+        .loser-card {
+            border: 1px solid #444;
+            opacity: 0.7;
+        }
+
+        .winner-text {
+            color: #ffaa00;
+            font-weight: bold;
+            font-size: 1.1em;
+            margin-bottom: 10px;
+        }
+
+        /* 持ちブキリストのデザイン */
+        .weapon-list {
+            margin-top: 15px;
+            text-align: left;
+            font-size: 0.9em;
+            background: rgba(0, 0, 0, 0.4);
+            padding: 10px;
+            border-radius: 8px;
+            flex-grow: 1;
+        }
+
+        .weapon-item {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+            border-bottom: 1px dashed #444;
+            padding-bottom: 4px;
+        }
+
+        .weapon-item:last-child {
+            border-bottom: none;
+            margin-bottom: 0;
+        }
+
+        /* 勝率が良いブキは光らせる */
+        .high-win {
+            color: #0cf2b4;
+            /* ネオングリーン */
+            font-weight: bold;
+        }
+
+        /* 勝率が低いブキは暗くする */
+        .low-win {
+            color: #888;
+        }
+
+        .conclusion {
+            margin-top: 30px;
+            font-size: 1.3em;
+            font-weight: bold;
+            padding: 15px;
+            background-color: #333;
+            border-radius: 8px;
+        }
+
+        .error-box {
+            background-color: #4a1515;
+            border: 2px dashed #ff5e5e;
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>🦑 リアルタイム指南ツール 🦑</h1>
+
+    <div class="schedule-container" id="schedule">
+        <p>スケジュールを読み込み中...</p>
+    </div>
+
+    <div class="advice-container" id="advice">
+        <div class="advice-title">🧠 過去のデータから AI が比較分析中...</div>
+    </div>
+
+    <script>
+        async function fetchSchedule() {
+            try {
+                const [scheduleRes, localeRes] = await Promise.all([
+                    fetch('https://splatoon3.ink/data/schedules.json'),
+                    fetch('https://splatoon3.ink/data/locale/ja-JP.json')
+                ]);
+
+                const data = await scheduleRes.json();
+                const locale = await localeRes.json();
+
+                function getStageName(stage) { return locale.stages[stage.id]?.name || stage.name; }
+                function getRuleName(rule) { return locale.rules[rule.id]?.name || rule.name; }
+
+                const now = new Date().getTime();
+                function getCurrent(nodes) {
+                    return nodes.find(n => {
+                        const start = new Date(n.startTime).getTime();
+                        const end = new Date(n.endTime).getTime();
+                        return start <= now && now < end;
+                    }) || nodes[0];
+                }
+
+                const regularNode = getCurrent(data.data.regularSchedules.nodes);
+                const bankaraNode = getCurrent(data.data.bankaraSchedules.nodes);
+                const xMatchNode = getCurrent(data.data.xSchedules.nodes);
+                const festNode = getCurrent(data.data.festSchedules.nodes);
+
+                const container = document.getElementById('schedule');
+                container.innerHTML = '';
+
+                function createCard(title, ruleName, stage1Name, stage2Name, color) {
+                    return `
+                        <div class="rule-card" style="border-top-color: ${color}">
+                            <div class="rule-name">${title} (${ruleName})</div>
+                            <div class="stage-name">📍 ${stage1Name}</div>
+                            <div class="stage-name">📍 ${stage2Name}</div>
+                        </div>
+                    `;
+                }
+
+                if (festNode && festNode.festMatchSetting) {
+                    const setting = festNode.festMatchSetting;
+                    container.innerHTML += createCard('🎉 フェスマッチ', getRuleName(setting.vsRule), getStageName(setting.vsStages[0]), getStageName(setting.vsStages[1]), '#ffd700');
+                } else if (regularNode && regularNode.regularMatchSetting) {
+                    const setting = regularNode.regularMatchSetting;
+                    container.innerHTML += createCard('ナワバリバトル', 'レギュラー', getStageName(setting.vsStages[0]), getStageName(setting.vsStages[1]), '#eaff3d');
+                }
+
+                if (bankaraNode && bankaraNode.bankaraMatchSettings) {
+                    const bankaraOpen = bankaraNode.bankaraMatchSettings.find(s => s.bankaraMode === 'OPEN');
+                    const bankaraChallenge = bankaraNode.bankaraMatchSettings.find(s => s.bankaraMode === 'CHALLENGE');
+                    if (bankaraOpen) container.innerHTML += createCard('バンカラ (オープン)', getRuleName(bankaraOpen.vsRule), getStageName(bankaraOpen.vsStages[0]), getStageName(bankaraOpen.vsStages[1]), '#f02d7d');
+                    if (bankaraChallenge) container.innerHTML += createCard('バンカラ (チャレンジ)', getRuleName(bankaraChallenge.vsRule), getStageName(bankaraChallenge.vsStages[0]), getStageName(bankaraChallenge.vsStages[1]), '#f02d7d');
+                }
+
+                if (xMatchNode && xMatchNode.xMatchSetting) {
+                    const setting = xMatchNode.xMatchSetting;
+                    container.innerHTML += createCard('Xマッチ', getRuleName(setting.vsRule), getStageName(setting.vsStages[0]), getStageName(setting.vsStages[1]), '#0cf2b4');
+                }
+
+                const adviceContainer = document.getElementById('advice');
+
+                // マイブキ勝率データ（仮）
+                const openData = [
+                    { name: 'ダイナモローラー', rate: 62 }, { name: 'ホクサイ・ヒュー', rate: 58 }, { name: 'バレルスピナー', rate: 55 },
+                    { name: 'R-PEN/5H', rate: 51 }, { name: 'リッター4K', rate: 49 }, { name: 'トライストリンガーコラボ', rate: 45 },
+                    { name: 'リッター4Kスコープ', rate: 42 }, { name: 'スプラチャージャースコープ', rate: 40 }, { name: 'リッター4Kカスタム', rate: 38 }, { name: 'リッター4Kカスタムスコープ', rate: 35 }
+                ];
+                const challengeData = [
+                    { name: 'リッター4K', rate: 72 }, { name: 'R-PEN/5H', rate: 68 }, { name: 'バレルスピナー', rate: 65 },
+                    { name: 'リッター4Kスコープ', rate: 60 }, { name: 'トライストリンガーコラボ', rate: 58 }, { name: 'リッター4Kカスタム', rate: 55 },
+                    { name: 'ダイナモローラー', rate: 50 }, { name: 'ホクサイ・ヒュー', rate: 48 }, { name: 'リッター4Kカスタムスコープ', rate: 45 }, { name: 'スプラチャージャースコープ', rate: 42 }
+                ];
+                const xMatchData = [
+                    { name: 'R-PEN/5H', rate: 65 }, { name: 'トライストリンガーコラボ', rate: 61 }, { name: 'リッター4Kカスタム', rate: 59 },
+                    { name: 'バレルスピナー', rate: 55 }, { name: 'リッター4K', rate: 53 }, { name: 'ホクサイ・ヒュー', rate: 50 },
+                    { name: 'ダイナモローラー', rate: 48 }, { name: 'スプラチャージャースコープ', rate: 45 }, { name: 'リッター4Kカスタムスコープ', rate: 41 }, { name: 'リッター4Kスコープ', rate: 39 }
+                ];
+
+                const topOpen = openData[0].rate;
+                const topChallenge = challengeData[0].rate;
+                const topXMatch = xMatchData[0].rate;
+                const maxWinRate = Math.max(topOpen, topChallenge, topXMatch);
+
+                const isOpenBest = maxWinRate === topOpen;
+                const isChallengeBest = maxWinRate === topChallenge;
+                const isXMatchBest = maxWinRate === topXMatch;
+
+                function createWeaponListHtml(weaponData) {
+                    let html = '<div class="weapon-list">';
+                    weaponData.forEach(w => {
+                        const colorClass = w.rate >= 50 ? 'high-win' : 'low-win';
+                        html += `
+                            <div class="weapon-item ${colorClass}">
+                                <span>${w.name}</span>
+                                <span>${w.rate}%</span>
+                            </div>
+                        `;
+                    });
+                    html += '</div>';
+                    return html;
+                }
+
+                let bestModeName = '';
+                let bestModeColor = '';
+                if (isChallengeBest) { bestModeName = 'バンカラ (チャレンジ)'; bestModeColor = '#f02d7d'; }
+                else if (isXMatchBest) { bestModeName = 'Xマッチ'; bestModeColor = '#0cf2b4'; }
+                else { bestModeName = 'バンカラ (オープン)'; bestModeColor = '#f02d7d'; }
+
+                // フェス中などでバンカラマッチがない時にも対応できるように少しだけ賢くしました！
+                if (bankaraNode && bankaraNode.bankaraMatchSettings && xMatchNode) {
+                    adviceContainer.innerHTML = `
+                        <div class="advice-title">📊 マイブキ勝率 比較分析</div>
+                        
+                        <div class="compare-box">
+                            <div class="compare-card ${isOpenBest ? 'winner-card' : 'loser-card'}">
+                                ${isOpenBest ? '<div class="winner-text">👑 今はこちらがおすすめ！</div>' : ''}
+                                <div style="font-size: 1.2em; font-weight: bold; margin-bottom: 10px;">バンカラ (オープン)</div>
+                                ${createWeaponListHtml(openData)}
+                            </div>
+
+                            <div class="compare-card ${isChallengeBest ? 'winner-card' : 'loser-card'}">
+                                ${isChallengeBest ? '<div class="winner-text">👑 今はこちらがおすすめ！</div>' : ''}
+                                <div style="font-size: 1.2em; font-weight: bold; margin-bottom: 10px;">バンカラ (チャレンジ)</div>
+                                ${createWeaponListHtml(challengeData)}
+                            </div>
+
+                            <div class="compare-card ${isXMatchBest ? 'winner-card' : 'loser-card'}">
+                                ${isXMatchBest ? '<div class="winner-text">👑 今はこちらがおすすめ！</div>' : ''}
+                                <div style="font-size: 1.2em; font-weight: bold; margin-bottom: 10px;">Xマッチ</div>
+                                ${createWeaponListHtml(xMatchData)}
+                            </div>
+                        </div>
+
+                        <div class="conclusion">
+                            💡 結論：今の時間は <span style="color: ${bestModeColor}; font-size: 1.1em;">「${bestModeName}」</span> に潜るのが一番勝てます！
+                        </div>
+                    `;
+                } else {
+                    adviceContainer.innerHTML = `
+                        <div class="advice-title">💡 現在はバンカラマッチ・Xマッチはお休み中です</div>
+                        <p>ナワバリバトルやサーモンランで楽しく遊びましょう！</p>
+                    `;
+                }
+
+            } catch (error) {
+                document.getElementById('schedule').innerHTML = `
+                    <div class="error-box">
+                        <p style="color: #ff5e5e; font-weight: bold; font-size: 1.2em;">データの読み込みに失敗しちゃいました...</p>
+                        <p>👇エラーの正体👇</p>
+                        <p style="color: #ffaaaa; font-family: monospace;">${error.message}</p>
+                    </div>
+                `;
+            }
+        }
+
+        fetchSchedule();
+    </script>
+</body>
+
+</html>
