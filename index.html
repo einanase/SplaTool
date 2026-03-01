@@ -20,11 +20,37 @@
             text-align: center;
         }
 
+        /* 📊 スプレッドシート用リンク（JSエラーでも絶対に表示されるように独立） */
+        .spreadsheet-link {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .spreadsheet-link a {
+            display: inline-block;
+            background-color: #2ea44f;
+            color: white;
+            text-decoration: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-weight: bold;
+            font-size: 1.1em;
+            box-shadow: 0 4px 0 #237a3b;
+            transition: 0.1s;
+        }
+
+        .spreadsheet-link a:hover {
+            background-color: #3fb950;
+            transform: translateY(2px);
+            box-shadow: 0 2px 0 #237a3b;
+        }
+
         .schedule-container {
             display: flex;
             flex-wrap: wrap;
             gap: 15px;
             justify-content: center;
+            min-height: 80px;
         }
 
         .rule-card {
@@ -50,7 +76,6 @@
             border-left: 4px solid #603bff;
         }
 
-        /* 記録フォームのデザイン */
         .record-form {
             background-color: #222;
             border: 2px dashed #0cf2b4;
@@ -70,7 +95,8 @@
         }
 
         select,
-        input[type="number"] {
+        input[type="number"],
+        input[type="text"] {
             background-color: #333;
             color: #fff;
             border: 1px solid #555;
@@ -110,7 +136,6 @@
             transform: scale(1.05);
         }
 
-        /* 比較エリアのデザイン */
         .advice-container {
             margin-top: 40px;
             padding: 20px;
@@ -140,7 +165,6 @@
             padding: 20px;
             border-radius: 10px;
             width: 300px;
-            transition: 0.3s;
             display: flex;
             flex-direction: column;
         }
@@ -210,7 +234,6 @@
             border-radius: 8px;
         }
 
-        /* 履歴リストのデザイン */
         .history-container {
             margin-top: 40px;
             padding: 20px;
@@ -218,8 +241,7 @@
             border: 2px solid #333;
             border-radius: 15px;
             max-width: 800px;
-            margin-left: auto;
-            margin-right: auto;
+            margin: 40px auto;
         }
 
         .history-title {
@@ -285,22 +307,28 @@
 <body>
     <h1>🦑 リアルタイム指南ツール 🦑</h1>
 
+    <div class="spreadsheet-link">
+        <a href="https://docs.google.com/spreadsheets/d/1TdTjlwc34-GDiI7n-kNmp_yVlNtrHr7gulNJBAhRAGc/edit?gid=0#gid=0"
+            target="_blank">
+            📊 スプレッドシートの戦績表を開く
+        </a>
+    </div>
+
     <div class="schedule-container" id="schedule">
-        <p>スケジュールを読み込み中...</p>
+        <p style="color: #ccc;">スケジュールを取得中...</p>
     </div>
 
     <div class="record-form">
         <h2 style="color: #0cf2b4; margin-top:0;">📝 爆速・戦績メモ</h2>
         <div class="form-row">
-            <select id="input-rule">
+            <select id="input-rule" onchange="updateStageDropdown()">
                 <option value="バンカラ (チャレンジ)">バンカラ (チャレンジ)</option>
                 <option value="バンカラ (オープン)">バンカラ (オープン)</option>
                 <option value="Xマッチ">Xマッチ</option>
                 <option value="ナワバリバトル">ナワバリバトル</option>
             </select>
-            <select id="input-stage">
-                <option value="">ステージ読み込み中...</option>
-            </select>
+            <input type="text" id="input-stage" placeholder="ステージ名 (自動取得または手動)" style="width: 200px;">
+
             <select id="input-weapon">
                 <option value="リッター4K">リッター4K</option>
                 <option value="リッター4Kスコープ">リッター4Kスコープ</option>
@@ -326,13 +354,12 @@
     </div>
 
     <div class="advice-container" id="advice">
-        <div class="advice-title">🧠 AI 分析中...</div>
+        <div class="advice-title">🧠 AI 分析スタンバイ中...</div>
     </div>
 
     <div class="history-container" id="history-box" style="display: none;">
         <div class="history-title">🕒 直近の戦績 (最新10件)</div>
-        <div class="history-list" id="history-list">
-        </div>
+        <div class="history-list" id="history-list"></div>
     </div>
 
     <div style="text-align: center;">
@@ -346,18 +373,23 @@
             'ホクサイ・ヒュー', 'ダイナモローラー'
         ];
         const STORAGE_KEY = 'spla_my_records';
-
-        // 👇 いただいたURLを直接埋め込みました！ 👇
         const GAS_URL = "https://script.google.com/macros/s/AKfycbwXBXAkhzPBi5ka_nphYoKqO-EO6xYPr3wEqP3OCP6OwPKnv7AU-YFkuogGAb1FbZOCYw/exec";
 
         let ruleStageMap = {};
+        let currentRuleDetailMap = {
+            'バンカラ (オープン)': '不明',
+            'バンカラ (チャレンジ)': '不明',
+            'Xマッチ': '不明',
+            'ナワバリバトル': 'レギュラー'
+        };
 
         function saveRecord(result) {
-            const rule = document.getElementById('input-rule').value;
-            const stage = document.getElementById('input-stage').value;
+            const mode = document.getElementById('input-rule').value;
+            const stage = document.getElementById('input-stage').value || '不明';
             const weapon = document.getElementById('input-weapon').value;
             const kill = document.getElementById('input-kill').value;
             const death = document.getElementById('input-death').value;
+            const detailRule = currentRuleDetailMap[mode] || "不明";
 
             if (!kill || !death) {
                 alert("キル数とデス数を入れてください！");
@@ -366,7 +398,8 @@
 
             const recordData = {
                 date: new Date().getTime(),
-                rule: rule,
+                rule: mode,
+                detailRule: detailRule, // ★ ガチヤグラ、ガチアサリ等の厳密なルール名
                 stage: stage,
                 weapon: weapon,
                 kill: parseInt(kill),
@@ -374,7 +407,6 @@
                 result: result
             };
 
-            // スマホの記憶を更新して即画面反映
             let records = JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
             records.push(recordData);
             localStorage.setItem(STORAGE_KEY, JSON.stringify(records));
@@ -382,7 +414,6 @@
 
             document.getElementById('save-msg').innerText = "⏳ スプレッドシートへ送信中...";
 
-            // 裏でスプレッドシートに送信
             fetch(GAS_URL, {
                 method: 'POST',
                 mode: 'no-cors',
@@ -393,16 +424,12 @@
                 document.getElementById('input-kill').value = '';
                 document.getElementById('input-death').value = '';
                 setTimeout(() => { document.getElementById('save-msg').innerText = ""; }, 3000);
+            }).catch(() => {
+                document.getElementById('save-msg').innerText = "⚠️ 送信エラー（ローカルには保存されました）";
             });
         }
 
         async function loadDataFromSpreadsheet() {
-            const adviceContainer = document.getElementById('advice');
-            adviceContainer.innerHTML = `
-                <div class="advice-title">🔄 データベースと同期中...</div>
-                <p style="color:#ccc;">スプレッドシートから最新の戦績を読み込んでいます（数秒かかります）</p>
-            `;
-
             try {
                 const response = await fetch(GAS_URL);
                 const dbRecords = await response.json();
@@ -410,7 +437,7 @@
                 renderAdvice();
             } catch (error) {
                 console.error("データ同期エラー:", error);
-                renderAdvice();
+                renderAdvice(); // エラーでも画面は描画する
             }
         }
 
@@ -422,21 +449,15 @@
         }
 
         function updateStageDropdown() {
-            const selectedRule = document.getElementById('input-rule').value;
-            const stageSelect = document.getElementById('input-stage');
-            stageSelect.innerHTML = '';
-
-            const stages = ruleStageMap[selectedRule] || [];
+            const selectedMode = document.getElementById('input-rule').value;
+            const stages = ruleStageMap[selectedMode] || [];
+            const stageInput = document.getElementById('input-stage');
             if (stages.length > 0) {
-                stages.forEach(s => {
-                    stageSelect.innerHTML += `<option value="${s}">${s}</option>`;
-                });
+                stageInput.value = stages[0]; // 自動的に一つ目のステージをセット
             } else {
-                stageSelect.innerHTML = `<option value="">開催されていません</option>`;
+                stageInput.value = "";
             }
         }
-
-        document.getElementById('input-rule').addEventListener('change', updateStageDropdown);
 
         async function fetchSchedule() {
             try {
@@ -463,31 +484,30 @@
                 const regularNode = getCurrent(data.data.regularSchedules.nodes);
                 const bankaraNode = getCurrent(data.data.bankaraSchedules.nodes);
                 const xMatchNode = getCurrent(data.data.xSchedules.nodes);
-                const festNode = getCurrent(data.data.festSchedules.nodes);
 
                 const container = document.getElementById('schedule');
                 container.innerHTML = '';
                 ruleStageMap = {};
+                currentRuleDetailMap = {};
 
                 function createCard(title, ruleName, stage1Name, stage2Name, color) {
                     return `
                         <div class="rule-card" style="border-top-color: ${color}">
-                            <div class="rule-name">${title} (${ruleName})</div>
+                            <div class="rule-name">${title} <br><span style="color:#0cf2b4;">【${ruleName}】</span></div>
                             <div class="stage-name">📍 ${stage1Name}</div>
                             <div class="stage-name">📍 ${stage2Name}</div>
                         </div>
                     `;
                 }
 
-                if (festNode && festNode.festMatchSetting) {
-                    const setting = festNode.festMatchSetting;
-                    container.innerHTML += createCard('🎉 フェスマッチ', getRuleName(setting.vsRule), getStageName(setting.vsStages[0]), getStageName(setting.vsStages[1]), '#ffd700');
-                } else if (regularNode && regularNode.regularMatchSetting) {
+                if (regularNode && regularNode.regularMatchSetting) {
                     const setting = regularNode.regularMatchSetting;
                     const s1 = getStageName(setting.vsStages[0]);
                     const s2 = getStageName(setting.vsStages[1]);
-                    container.innerHTML += createCard('ナワバリバトル', 'レギュラー', s1, s2, '#eaff3d');
+                    const ruleName = getRuleName(setting.vsRule);
+                    container.innerHTML += createCard('ナワバリバトル', ruleName, s1, s2, '#eaff3d');
                     ruleStageMap['ナワバリバトル'] = [s1, s2];
+                    currentRuleDetailMap['ナワバリバトル'] = ruleName;
                 }
 
                 if (bankaraNode && bankaraNode.bankaraMatchSettings) {
@@ -496,14 +516,18 @@
                     if (bankaraOpen) {
                         const s1 = getStageName(bankaraOpen.vsStages[0]);
                         const s2 = getStageName(bankaraOpen.vsStages[1]);
-                        container.innerHTML += createCard('バンカラ (オープン)', getRuleName(bankaraOpen.vsRule), s1, s2, '#f02d7d');
+                        const ruleName = getRuleName(bankaraOpen.vsRule);
+                        container.innerHTML += createCard('バンカラ (オープン)', ruleName, s1, s2, '#f02d7d');
                         ruleStageMap['バンカラ (オープン)'] = [s1, s2];
+                        currentRuleDetailMap['バンカラ (オープン)'] = ruleName;
                     }
                     if (bankaraChallenge) {
                         const s1 = getStageName(bankaraChallenge.vsStages[0]);
                         const s2 = getStageName(bankaraChallenge.vsStages[1]);
-                        container.innerHTML += createCard('バンカラ (チャレンジ)', getRuleName(bankaraChallenge.vsRule), s1, s2, '#f02d7d');
+                        const ruleName = getRuleName(bankaraChallenge.vsRule);
+                        container.innerHTML += createCard('バンカラ (チャレンジ)', ruleName, s1, s2, '#f02d7d');
                         ruleStageMap['バンカラ (チャレンジ)'] = [s1, s2];
+                        currentRuleDetailMap['バンカラ (チャレンジ)'] = ruleName;
                     }
                 }
 
@@ -511,15 +535,20 @@
                     const setting = xMatchNode.xMatchSetting;
                     const s1 = getStageName(setting.vsStages[0]);
                     const s2 = getStageName(setting.vsStages[1]);
-                    container.innerHTML += createCard('Xマッチ', getRuleName(setting.vsRule), s1, s2, '#0cf2b4');
+                    const ruleName = getRuleName(setting.vsRule);
+                    container.innerHTML += createCard('Xマッチ', ruleName, s1, s2, '#0cf2b4');
                     ruleStageMap['Xマッチ'] = [s1, s2];
+                    currentRuleDetailMap['Xマッチ'] = ruleName;
                 }
 
                 updateStageDropdown();
 
             } catch (error) {
-                document.getElementById('schedule').innerHTML = `<p>エラーが発生しました: ${error.message}</p>`;
+                // 通信エラー（Failed to fetch等）が起きても画面が壊れないようにする
+                document.getElementById('schedule').innerHTML = `<p style="color: #ff4444;">スケジュールの自動取得に失敗しました。<br>ステージ名は下の入力欄に手動で入力してください。</p>`;
             }
+            // エラーが起きても絶対に分析処理は走らせる
+            renderAdvice();
         }
 
         function renderAdvice() {
@@ -529,11 +558,16 @@
 
             let records = JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
 
-            function calcWinRates(ruleName) {
-                const ruleRecords = records.filter(r => r.rule === ruleName);
+            // ★ 修正ポイント：モード（チャレンジ等）と、現在の詳細ルール（ヤグラ等）の両方が一致するデータだけを抽出
+            function calcWinRates(modeName) {
+                const targetDetailRule = currentRuleDetailMap[modeName] || "不明";
+                const filteredRecords = records.filter(r => {
+                    // 古いデータ（detailRuleがない）は今のルールと一致しないため除外される
+                    return r.rule === modeName && r.detailRule === targetDetailRule;
+                });
 
                 return myWeapons.map(weapon => {
-                    const weaponRecords = ruleRecords.filter(r => r.weapon === weapon);
+                    const weaponRecords = filteredRecords.filter(r => r.weapon === weapon);
                     const totalMatches = weaponRecords.length;
                     const wins = weaponRecords.filter(r => r.result === 'win').length;
 
@@ -555,122 +589,68 @@
 
             const maxWinRate = Math.max(topOpen, topChallenge, topXMatch);
 
-            // データが1件もない時の処理
             if (maxWinRate === -1) {
                 adviceContainer.innerHTML = `
-                    <div class="advice-title">🧠 AI 分析スタンバイ中...</div>
-                    <p style="color:#ccc;">まだ戦績データがありません。<br>上のフォームから1試合でも記録すると、ここに最強の分析結果が表示されます！</p>
+                    <div class="advice-title">🧠 今のルールに合わせた分析スタンバイ中...</div>
+                    <p style="color:#ccc;">今のルール（${currentRuleDetailMap['バンカラ (チャレンジ)']}等）の戦績データがまだありません。<br>1試合記録すると、このルールに特化した分析結果が表示されます！</p>
                 `;
                 historyBox.style.display = 'none';
                 return;
             }
 
-            // 分析結果の表示
             const isOpenBest = maxWinRate === topOpen;
             const isChallengeBest = maxWinRate === topChallenge;
             const isXMatchBest = maxWinRate === topXMatch;
 
-            let bestModeName = '';
-            let bestModeColor = '';
-            let bestWeaponName = '';
-
-            if (isChallengeBest) {
-                bestModeName = 'バンカラ (チャレンジ)';
-                bestModeColor = '#f02d7d';
-                bestWeaponName = challengeData[0].name;
-            }
-            else if (isXMatchBest) {
-                bestModeName = 'Xマッチ';
-                bestModeColor = '#0cf2b4';
-                bestWeaponName = xMatchData[0].name;
-            }
-            else {
-                bestModeName = 'バンカラ (オープン)';
-                bestModeColor = '#f02d7d';
-                bestWeaponName = openData[0].name;
-            }
-
-            // おすすめのルールとブキをフォームに自動セット
-            const ruleSelect = document.getElementById('input-rule');
-            const weaponSelect = document.getElementById('input-weapon');
-
-            if (ruleSelect.value !== bestModeName) {
-                ruleSelect.value = bestModeName;
-                updateStageDropdown(); // ルールが変わったらステージの選択肢も連動させる
-            }
-            if (bestWeaponName) {
-                weaponSelect.value = bestWeaponName;
-            }
+            let bestModeName = isOpenBest ? 'バンカラ (オープン)' : (isXMatchBest ? 'Xマッチ' : 'バンカラ (チャレンジ)');
+            let bestModeColor = isXMatchBest ? '#0cf2b4' : '#f02d7d';
 
             function createWeaponListHtml(weaponData) {
                 let html = '<div class="weapon-list">';
                 weaponData.forEach(w => {
-                    let colorClass = 'no-data';
-                    if (w.rate >= 50) colorClass = 'high-win';
-                    else if (w.rate >= 0) colorClass = 'low-win';
-
-                    html += `
-                        <div class="weapon-item ${colorClass}">
-                            <span>${w.name}</span>
-                            <span>${w.text}</span>
-                        </div>
-                    `;
+                    let colorClass = w.rate >= 50 ? 'high-win' : (w.rate >= 0 ? 'low-win' : 'no-data');
+                    html += `<div class="weapon-item ${colorClass}"><span>${w.name}</span><span>${w.text}</span></div>`;
                 });
                 html += '</div>';
                 return html;
             }
 
             adviceContainer.innerHTML = `
-                <div class="advice-title">📊 あなたの『本物』のデータ比較分析</div>
-                
+                <div class="advice-title">📊 今のルールに特化した分析結果</div>
                 <div class="compare-box">
                     <div class="compare-card ${isOpenBest ? 'winner-card' : 'loser-card'}">
-                        ${isOpenBest ? '<div class="winner-text">👑 今はこちらがおすすめ！</div>' : ''}
-                        <div style="font-size: 1.2em; font-weight: bold; margin-bottom: 10px;">バンカラ (オープン)</div>
+                        <div style="font-weight:bold;">オープン【${currentRuleDetailMap['バンカラ (オープン)']}】</div>
                         ${createWeaponListHtml(openData)}
                     </div>
-
                     <div class="compare-card ${isChallengeBest ? 'winner-card' : 'loser-card'}">
-                        ${isChallengeBest ? '<div class="winner-text">👑 今はこちらがおすすめ！</div>' : ''}
-                        <div style="font-size: 1.2em; font-weight: bold; margin-bottom: 10px;">バンカラ (チャレンジ)</div>
+                        <div style="font-weight:bold;">チャレンジ【${currentRuleDetailMap['バンカラ (チャレンジ)']}】</div>
                         ${createWeaponListHtml(challengeData)}
                     </div>
-
                     <div class="compare-card ${isXMatchBest ? 'winner-card' : 'loser-card'}">
-                        ${isXMatchBest ? '<div class="winner-text">👑 今はこちらがおすすめ！</div>' : ''}
-                        <div style="font-size: 1.2em; font-weight: bold; margin-bottom: 10px;">Xマッチ</div>
+                        <div style="font-weight:bold;">Xマッチ【${currentRuleDetailMap['Xマッチ']}】</div>
                         ${createWeaponListHtml(xMatchData)}
                     </div>
                 </div>
-
-                <div class="conclusion">
-                    💡 結論：今の時間は <span style="color: ${bestModeColor}; font-size: 1.1em;">「${bestModeName}」</span> に潜るのが一番勝率が高いです！
-                </div>
+                <div class="conclusion">💡 結論：今は <span style="color: ${bestModeColor};">「${bestModeName}」</span> が一番おすすめです！</div>
             `;
 
-            // 直近10件の履歴リストを描画する
             historyBox.style.display = 'block';
             const sortedRecords = [...records].sort((a, b) => b.date - a.date);
             const recentRecords = sortedRecords.slice(0, 10);
-
             let historyHtml = '';
             recentRecords.forEach(r => {
                 const isWin = r.result === 'win';
-                const resultText = isWin ? '<span style="color:#ffaa00; font-weight:bold;">WIN</span>' : '<span style="color:#888; font-weight:bold;">LOSE</span>';
-                const resultClass = isWin ? 'history-win' : 'history-lose';
-
                 const d = new Date(r.date);
                 const dateStr = `${d.getMonth() + 1}/${d.getDate()} ${d.getHours()}:${String(d.getMinutes()).padStart(2, '0')}`;
-
                 historyHtml += `
-                    <div class="history-item ${resultClass}">
+                    <div class="history-item ${isWin ? 'history-win' : 'history-lose'}">
                         <div class="history-info">
-                            <div style="font-weight:bold; color:#0cf2b4;">${r.rule} / ${r.stage}</div>
-                            <div>🔫 ${r.weapon}</div>
+                            <div style="font-weight:bold; color:#0cf2b4;">${r.rule}【${r.detailRule || '不明'}】</div>
+                            <div>📍 ${r.stage} / 🔫 ${r.weapon}</div>
                             <div class="history-date">${dateStr}</div>
                         </div>
                         <div style="text-align: right;">
-                            <div style="margin-bottom:5px;">${resultText}</div>
+                            <div style="font-weight:bold; color:${isWin ? '#ffaa00' : '#888'}">${isWin ? 'WIN' : 'LOSE'}</div>
                             <div class="history-kd">${r.kill}k / ${r.death}d</div>
                         </div>
                     </div>
