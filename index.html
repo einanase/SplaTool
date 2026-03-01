@@ -283,6 +283,11 @@
         // ルールとステージの組み合わせを保存する辞書
         let ruleStageMap = {};
 
+        // --------------------------------------------------------
+        // 👇 ① まず、さっきのGAS_URLを「一番外側（グローバル）」に出します 👇
+        const GAS_URL = "https://script.google.com/macros/s/AKfycbwXBXAkhzPBi5ka_nphYoKqO-EO6xYPr3wEqP3OCP6OwPKnv7AU-YFkuogGAb1FbZOCYw/exec";
+        // --------------------------------------------------------
+
         function saveRecord(result) {
             const rule = document.getElementById('input-rule').value;
             const stage = document.getElementById('input-stage').value;
@@ -295,10 +300,6 @@
                 return;
             }
 
-            // 👇 ここに、さっきコピーした長ーいURLを貼り付けます！ 👇
-            const GAS_URL = "https://script.google.com/macros/s/AKfycbwXBXAkhzPBi5ka_nphYoKqO-EO6xYPr3wEqP3OCP6OwPKnv7AU-YFkuogGAb1FbZOCYw/exec";
-
-            // 送るデータを作る
             const recordData = {
                 date: new Date().getTime(),
                 rule: rule,
@@ -309,38 +310,57 @@
                 result: result
             };
 
-            // 1. 今まで通り、スマホの中（localStorage）にも保存して画面を更新する
+            // まず画面（スマホの中）を更新して爆速で表示を切り替える
             let records = JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
             records.push(recordData);
             localStorage.setItem(STORAGE_KEY, JSON.stringify(records));
             renderAdvice();
 
-            // 2. さらに！ スプレッドシート（DB）にも裏口からデータを送信する！
+            document.getElementById('save-msg').innerText = "⏳ スプレッドシートへ送信中...";
+
+            // 裏でスプレッドシートに送信
             fetch(GAS_URL, {
                 method: 'POST',
-                mode: 'no-cors', // セキュリティの壁をすり抜けるおまじない
-                headers: {
-                    'Content-Type': 'application/json'
-                },
+                mode: 'no-cors',
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(recordData)
             }).then(() => {
-                console.log("スプレッドシートへの送信完了！");
-            }).catch(error => {
-                console.error("エラー:", error);
+                document.getElementById('save-msg').innerText = "✅ 送信完了！";
+                document.getElementById('input-kill').value = '';
+                document.getElementById('input-death').value = '';
+                setTimeout(() => { document.getElementById('save-msg').innerText = ""; }, 3000);
             });
-
-            document.getElementById('save-msg').innerText = "✅ スプレッドシートにも記録を保存しました！";
-            document.getElementById('input-kill').value = '';
-            document.getElementById('input-death').value = '';
-            setTimeout(() => { document.getElementById('save-msg').innerText = ""; }, 3000);
         }
 
-        function resetData() {
-            if (confirm("本当に今までの戦績データを全部消去しますか？")) {
-                localStorage.removeItem(STORAGE_KEY);
+        // 👇 ② そして、この「スプレッドシートから読み込む関数」を追記します！ 👇
+        async function loadDataFromSpreadsheet() {
+            const adviceContainer = document.getElementById('advice');
+            adviceContainer.innerHTML = `
+                <div class="advice-title">🔄 データベースと同期中...</div>
+                <p style="color:#ccc;">スプレッドシートから最新の戦績を読み込んでいます（数秒かかります）</p>
+            `;
+
+            try {
+                // スプレッドシートから最新データを取得！
+                const response = await fetch(GAS_URL);
+                const dbRecords = await response.json();
+
+                // スマホの記憶を、スプレッドシートの「最新の真実」で完全に上書きする！
+                localStorage.setItem(STORAGE_KEY, JSON.stringify(dbRecords));
+
+                // 画面を再計算して描画！
+                renderAdvice();
+            } catch (error) {
+                console.error("データ同期エラー:", error);
+                // 失敗した場合は、とりあえずスマホの中のデータで描画する
                 renderAdvice();
             }
         }
+
+        // 👇 ③ 最後に、一番下の呼び出し部分をこう変えます！ 👇
+        // スケジュール取得と、データ同期を同時にスタートさせる！
+        fetchSchedule();
+        loadDataFromSpreadsheet();
 
         // ルール選択が変更された時にステージ一覧を切り替える関数
         function updateStageDropdown() {
